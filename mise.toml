@@ -1,0 +1,5 @@
+[tools]
+php = "8.4.25"
+
+[settings]
+locked = true
