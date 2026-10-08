@@ -13,7 +13,10 @@ Route::prefix('v1')->middleware('throttle:60,1')->group(function (): void {
         'time' => now()->toIso8601String(),
     ]));
 
-    Route::get('/detections', [DetectionController::class, 'index']);
+    Route::middleware('auth:sanctum')->group(function (): void {
+        Route::get('/detections', [DetectionController::class, 'index']);
+        Route::get('/stats', [DetectionController::class, 'stats']);
+    });
+
     Route::post('/detections', [DetectionController::class, 'store']);
-    Route::get('/stats', [DetectionController::class, 'stats']);
 });
