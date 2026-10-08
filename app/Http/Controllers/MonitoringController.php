@@ -71,6 +71,31 @@ class MonitoringController extends Controller
         ));
     }
 
+    /**
+     * Menampilkan seluruh data detection dalam bentuk raw JSON.
+     *
+     * Endpoint ini dipanggil melalui route web yang dilindungi
+     * middleware auth, sehingga hanya user yang sudah login
+     * yang dapat mengaksesnya.
+     */
+    public function json(Request $request)
+    {
+        $query = Detection::with('device')
+            ->orderByDesc('id');
+
+        $detections = $query->get()->map(function (Detection $detection) {
+            return $this->toJsonShape($detection);
+        });
+
+        return response()->json([
+            'data' => $detections,
+            'meta' => [
+                'count' => $detections->count(),
+                'server_time' => now()->toIso8601String(),
+            ],
+        ]);
+    }
+
     private function toJsonShape(Detection $detection): array
     {
         $device = $detection->device;

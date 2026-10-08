@@ -18,6 +18,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/monitoring', [MonitoringController::class, 'index'])
         ->name('monitoring.index');
 
+    Route::get('/monitoring/json', [MonitoringController::class, 'json'])
+        ->name('monitoring.json');
+
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('logout');
 });
