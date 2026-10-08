@@ -13,10 +13,12 @@ class MonitoringController extends Controller
         $kategori = trim((string) $request->query('kategori', ''));
         $deviceId = trim((string) $request->query('device_id', ''));
 
-        $query = Detection::with('device')->orderByDesc('id');
+        $query = Detection::with('device')
+            ->orderByDesc('id');
 
+        // Filter memakai nama kolom DATABASE, bukan nama JSON API.
         if ($kategori !== '') {
-            $query->where('kategori', $kategori);
+            $query->where('category', $kategori);
         }
 
         if ($deviceId !== '') {
@@ -31,16 +33,22 @@ class MonitoringController extends Controller
 
         $stats = [
             'total' => Detection::count(),
-            'normal' => Detection::where('kategori', 'NORMAL')->count(),
-            'promo' => Detection::where('kategori', 'PROMO')->count(),
-            'penipuan' => Detection::where('kategori', 'PENIPUAN')->count(),
+            'normal' => Detection::where('category', 'NORMAL')->count(),
+            'promo' => Detection::where('category', 'PROMO')->count(),
+            'penipuan' => Detection::where('category', 'PENIPUAN')->count(),
             'devices' => Device::count(),
         ];
 
         $devices = Device::query()
             ->orderBy('manufacturer')
             ->orderBy('model')
-            ->get(['id', 'installation_id', 'manufacturer', 'brand', 'model']);
+            ->get([
+                'id',
+                'installation_id',
+                'manufacturer',
+                'brand',
+                'model',
+            ]);
 
         $categories = ['NORMAL', 'PROMO', 'PENIPUAN'];
 
@@ -69,15 +77,21 @@ class MonitoringController extends Controller
 
         return [
             'id' => $detection->id,
-            'pesan' => $detection->pesan,
+
+            // DATABASE → JSON API
+            'pesan' => $detection->message,
+
             'hasil_deteksi' => [
-                'kategori' => $detection->kategori,
-                'keyakinan' => (float) $detection->keyakinan,
-                'probabilitas' => $detection->probabilitas ?? [],
-                'tanda_bahaya' => $detection->tanda_bahaya ?? [],
+                'kategori' => $detection->category,
+                'keyakinan' => (float) $detection->confidence,
+                'probabilitas' => $detection->probabilities ?? [],
+                'tanda_bahaya' => $detection->danger_signs ?? [],
             ],
-            'waktu_deteksi' => $detection->waktu,
+
+            'waktu_deteksi' => $detection->detected_at,
+
             'created_at' => $detection->created_at?->toIso8601String(),
+
             'perangkat' => $device ? [
                 'id' => $device->id,
                 'installation_id' => $device->installation_id,
@@ -90,6 +104,7 @@ class MonitoringController extends Controller
                 'architecture' => $device->architecture,
                 'is_emulator' => (bool) $device->is_emulator,
             ] : null,
+
             'aplikasi' => $device ? [
                 'app_name' => $device->app_name,
                 'package_name' => $device->package_name,
@@ -97,11 +112,13 @@ class MonitoringController extends Controller
                 'version_code' => $device->version_code,
                 'build_type' => $device->build_type,
             ] : null,
+
             'jaringan' => [
                 'connection_type' => $detection->network_type,
                 'local_ip' => $detection->local_ip,
                 'server_observed_ip' => $detection->server_ip,
             ],
+
             'lokasi' => [
                 'permission_granted' => $detection->location_permission_granted === null
                     ? null
